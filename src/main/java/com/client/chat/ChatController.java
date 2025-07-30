@@ -3,6 +3,10 @@ package com.client.chat;
 import com.client.NetworkUtil;
 import com.client.Page;
 import com.client.Pages;
+import com.videoCall.AudioReceiver;
+import com.videoCall.AudioSender;
+import com.videoCall.VideoReceiver;
+import com.videoCall.VideoSender;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -36,8 +40,10 @@ import java.util.List;
 
 public class ChatController {
 
+    public static ChatController chatController;
+
     @FXML
-    private  ImageView sendIcon;
+    private ImageView sendIcon;
     @FXML
     private Button settingsButton;
     @FXML
@@ -62,13 +68,24 @@ public class ChatController {
     private TextField createRoomId;
     @FXML
     private Label roomLabel;
+    @FXML
+    private Button videoCallBtn;
+    @FXML
+    public ImageView video;
 
 
     private List<Message> messages;
     public static User currentUser;
-    public volatile boolean  isRecording = false;
-    private String base64ImageString ;
-    public  byte[] voiceData;
+    public volatile boolean isRecording = false;
+    private String base64ImageString;
+    public byte[] voiceData;
+
+
+    // video call threads
+    VideoSender videoSenderThread = new VideoSender("127.0.0.1", 5555);
+    VideoReceiver videoReceiverThread = new VideoReceiver(video, 5556);
+    AudioSender audioSenderThread = new AudioSender("127.0.0.1", 5557);
+    AudioReceiver audioReceiverThread = new AudioReceiver(5558);
 
 
     public static ImageView getImageViewFromBase64(String base64String) {
@@ -96,11 +113,11 @@ public class ChatController {
     }
 
 
-
-
-
     @FXML
     private void initialize() {
+
+
+        chatController = this;
         settingsButton.setOnAction(this::onSettingsClicked);
         sendButton.setOnAction(e -> sendMessage());
         userName.setText(currentUser.getName());
@@ -112,10 +129,10 @@ public class ChatController {
 
         String text = messageField.getText().trim();
 
-        boolean hasImage = base64ImageString!=null && !base64ImageString.isEmpty();
+        boolean hasImage = base64ImageString != null && !base64ImageString.isEmpty();
         boolean hasText = !text.isEmpty();
 //        boolean hasVoice = voiceData.length!=0; // Placeholder for voice message logic
-        if (!hasText ) return;
+        if (!hasText) return;
         try {
             Message msg = new Message(roomLabel.getText(), currentUser.getPhoneNumber(), currentUser.getName(), text, LocalDateTime.now());
 
@@ -138,6 +155,46 @@ public class ChatController {
                     if (obj instanceof Message msg && msg.getRoomId().equals(roomId.getText())) {
                         messages.add(msg);
                         Platform.runLater(() -> addMessageToUI(msg));
+                    } else if (obj instanceof String response) {
+//                        videoCallBtn.setText(response);
+                        if (response.equals("RECEIVE_CALL")) {
+                            Platform.runLater(() -> {
+                                videoCallBtn.setText("RECEIVE CALL");
+                            });
+                        } else if (response.equals("FAILED")) {
+                            Platform.runLater(() -> {
+                                videoCallBtn.setText("VIDEO CALL");
+                                showAlert("Failed to call.");
+                            });
+                        } else if (response.equals("WAITING")) {
+                            Platform.runLater(() -> {
+                                videoCallBtn.setText("CALLING...");
+
+                            });
+                        } else if (response.equals("ACCEPT_CALL")) {
+                            Platform.runLater(() -> {
+                                videoCallBtn.setText("END CALL");
+
+                                audioSenderThread.start();
+                                audioReceiverThread.start();
+                                videoSenderThread.start();
+                                videoReceiverThread.start();
+
+
+                            });
+                        } else if (response.equals("END_CALL")) {
+                            Platform.runLater(() -> {
+                                videoCallBtn.setText("VIDEO CALL");
+
+                                // stop all threads
+                                videoSenderThread.stopThread();
+                                videoReceiverThread.stopThread();
+                                audioSenderThread.stopThread();
+                                audioReceiverThread.stopThread();
+
+
+                            });
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -224,11 +281,11 @@ public class ChatController {
     }
 
     private void addMessageToUI(Message msg) {
-            boolean mine = msg.getSenderPhone().equals(currentUser.getPhoneNumber());
-            String sender = mine ? "You" : msg.getSenderName();
-            LocalTime time = msg.getTimestamp().toLocalTime();
-            addMessageBubble(msg.getContent(), mine, time, sender);
-        }
+        boolean mine = msg.getSenderPhone().equals(currentUser.getPhoneNumber());
+        String sender = mine ? "You" : msg.getSenderName();
+        LocalTime time = msg.getTimestamp().toLocalTime();
+        addMessageBubble(msg.getContent(), mine, time, sender);
+    }
 
     private void populateMessages() {
         messageContainer.getChildren().clear();
@@ -317,7 +374,7 @@ public class ChatController {
 
             if (response.equals("LEFT")) {
                 showAlert("You have left the room.");
-                messages=null;
+                messages = null;
                 roomLabel.setText("JOIN A ROOM");
                 populateMessages();
             } else {
@@ -329,6 +386,46 @@ public class ChatController {
 
         } catch (Exception e) {
             showAlert("Failed to leave room.");
+        }
+    }
+
+    public void videoCallHandler(ActionEvent event) {
+        try {
+            String room = roomLabel.getText();
+            if (room == null || room.isEmpty() || room.equals("JOIN A ROOM")) {
+                showAlert("Please join a room first.");
+                return;
+            }
+
+            if (videoCallBtn.getText().equals("RECEIVE CALL")) {
+                // Accept incoming call
+                NetworkUtil.getOut().writeObject("ACCEPT_CALL:" + room);
+                NetworkUtil.getOut().flush();
+//                videoCallBtn.setText("IN A CALL");
+
+                //starting all videcall threads
+
+
+                return;
+            } else if (videoCallBtn.getText().equals("END CALL")) {
+
+
+                NetworkUtil.getOut().writeObject("END_CALL:" + room);
+                NetworkUtil.getOut().flush();
+
+            } else {
+
+
+                // Send video call request
+                NetworkUtil.getOut().writeObject("VIDEO_CALL:" + room);
+                NetworkUtil.getOut().flush();
+
+                videoCallBtn.setText("CALLING...");
+            }
+
+
+        } catch (Exception e) {
+            showAlert("Failed to initiate video call.");
         }
     }
 }

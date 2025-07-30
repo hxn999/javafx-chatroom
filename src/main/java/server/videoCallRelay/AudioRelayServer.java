@@ -4,13 +4,14 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 
-public class AudioRelayServer implements Runnable {
+public class AudioRelayServer extends Thread {
 
-    private final int listenPort;
-    private final InetAddress client1Addr;
-    private final int client1Port;
-    private final InetAddress client2Addr;
-    private final int client2Port;
+    private  int listenPort;
+    private  InetAddress client1Addr;
+    private  int client1Port=5558;
+    private  InetAddress client2Addr;
+    private  int client2Port=5558;
+    private volatile boolean running = true;
 
     public AudioRelayServer(int listenPort, InetAddress client1Addr, int client1Port,
                       InetAddress client2Addr, int client2Port) {
@@ -21,12 +22,22 @@ public class AudioRelayServer implements Runnable {
         this.client2Port = client2Port;
     }
 
+    public AudioRelayServer(int listenPort, InetAddress client1Addr, InetAddress client2Addr) {
+        this.listenPort = listenPort;
+        this.client1Addr = client1Addr;
+        this.client2Addr = client2Addr;
+    }
+
+    public void stopThread() {
+        running = false;
+    }
+
     @Override
     public void run() {
         try (DatagramSocket socket = new DatagramSocket(listenPort)) {
             byte[] buffer = new byte[512];
 
-            while (true) {
+            while (running) {
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                 socket.receive(packet);
 

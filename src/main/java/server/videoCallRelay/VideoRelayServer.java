@@ -1,51 +1,71 @@
 package server.videoCallRelay;
 
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 
+public class VideoRelayServer extends Thread {
+    private  int listenPort;
+    private  InetAddress client1Address;
+    private  int client1Port=5556;
+    private  InetAddress client2Address;
+    private  int client2Port=5556;
+    private volatile boolean running = true;
 
-import java.net.*;
+    public VideoRelayServer(int listenPort, InetAddress client1Address, int client1Port,
+                      InetAddress client2Address, int client2Port) {
+        this.listenPort = listenPort;
+        this.client1Address = client1Address;
+        this.client1Port = client1Port;
+        this.client2Address = client2Address;
+        this.client2Port = client2Port;
+    }
 
-public class VideoRelayServer {
-    public static void main(String[] args) throws Exception {
-        DatagramSocket socket = new DatagramSocket(5555);
-        System.out.println("Relay server started on port 5555");
+    public VideoRelayServer(int listenPort, InetAddress client1Address, InetAddress client2Address) {
+        this.listenPort = listenPort;
+        this.client1Address = client1Address;
+        this.client2Address = client2Address;
+    }
 
-        InetAddress client1 = null, client2 = null;
-        int port1 = -1, port2 = -1;
+    public void stopThread() {
+        running = false;
+    }
 
-        byte[] buffer = new byte[65535];
+    @Override
+    public void run() {
+        try (DatagramSocket socket = new DatagramSocket(listenPort)) {
+            System.out.println("🎥 VideoRelay started on port " + listenPort);
 
-        while (true) {
-            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-            socket.receive(packet);
+            byte[] buffer = new byte[65535];
 
-            InetAddress senderAddr = packet.getAddress();
-            int senderPort = packet.getPort();
+            while (running) {
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+                socket.receive(packet);
 
-            if (client1 == null) {
-                client1 = senderAddr;
-                port1 = senderPort;
-                System.out.println("Client 1 joined: " + senderAddr + ":" + senderPort);
-            } else if (client2 == null && !(client1.equals(senderAddr) && port1 == senderPort)) {
-                client2 = senderAddr;
-                port2 = senderPort;
-                System.out.println("Client 2 joined: " + senderAddr + ":" + senderPort);
+                InetAddress senderAddr = packet.getAddress();
+                int senderPort = packet.getPort();
+
+                InetAddress targetAddr = null;
+                int targetPort = -1;
+
+                if (senderAddr.equals(client1Address) && senderPort == client1Port) {
+                    targetAddr = client2Address;
+                    targetPort = client2Port;
+                } else if (senderAddr.equals(client2Address) && senderPort == client2Port) {
+                    targetAddr = client1Address;
+                    targetPort = client1Port;
+                }
+
+                if (targetAddr != null) {
+                    DatagramPacket forward = new DatagramPacket(
+                            packet.getData(), packet.getLength(), targetAddr, targetPort
+                    );
+                    socket.send(forward);
+                }
             }
-
-            InetAddress targetAddr = null;
-            int targetPort = -1;
-
-            if (senderAddr.equals(client1) && senderPort == port1 && client2 != null) {
-                targetAddr = client2;
-                targetPort = port2;
-            } else if (senderAddr.equals(client2) && senderPort == port2) {
-                targetAddr = client1;
-                targetPort = port1;
-            }
-
-            if (targetAddr != null) {
-                DatagramPacket forward = new DatagramPacket(packet.getData(), packet.getLength(), targetAddr, targetPort);
-                socket.send(forward);
-            }
+        } catch (Exception e) {
+            System.err.println("❌ VideoRelay error: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }

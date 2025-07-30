@@ -30,6 +30,10 @@ public class VoiceRecorder extends VoiceUtil {
                                 out.write(buffer, 0, count);
                             }
                         }
+
+                        // TODO handle the end of recording
+                        // audio output
+                        out.toByteArray();
                     } finally {
                         try {
                             out.close();

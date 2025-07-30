@@ -1,6 +1,7 @@
 package model;
 
 import java.io.Serializable;
+import java.net.InetAddress;
 
 public class User implements Serializable {
     private String phoneNumber;
@@ -8,6 +9,7 @@ public class User implements Serializable {
     private String password;
     private String base64ProfilePic;
     boolean isLoggedIn = false;
+    private InetAddress inetAddress;
 
     private static final long serialVersionUID = 8853772668397633721L;
 
@@ -20,6 +22,13 @@ public class User implements Serializable {
 
     public void setLoggedIn(boolean loggedIn) {
         isLoggedIn = loggedIn;
+    }
+
+    public void setInetAddress(InetAddress inetAddress) {
+        this.inetAddress = inetAddress;
+    }
+    public InetAddress getInetAddress() {
+        return inetAddress;
     }
 
     public boolean isLoggedIn() {

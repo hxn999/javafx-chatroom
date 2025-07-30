@@ -37,7 +37,11 @@
             <!-- Chat list (room members or found users) -->
             <ScrollPane fitToWidth="true" prefHeight="433.0" prefWidth="342.0">
                <content>
-                  <VBox prefHeight="389.0" prefWidth="341.0" />
+                  <VBox alignment="CENTER" prefHeight="389.0" prefWidth="341.0" style="-fx-spacing: 50;">
+                     <children>
+                        <Button fx:id="videoCallBtn" mnemonicParsing="false" onAction="#videoCallHandler" text="Video Call" />
+                        <ImageView fx:id="video" fitHeight="240.0" fitWidth="320.0" pickOnBounds="true" preserveRatio="true" styleClass="video-border" />
+                     </children></VBox>
                </content>
             </ScrollPane>
 

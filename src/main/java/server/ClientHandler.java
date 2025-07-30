@@ -2,11 +2,12 @@ package server;
 
 import model.Message;
 import model.User;
-
 import java.io.*;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.util.*;
 
+import static server.ServerMain.roomUsers;
 import static server.ServerMain.saveUsersToFile;
 
 public class ClientHandler extends Thread {
@@ -16,9 +17,12 @@ public class ClientHandler extends Thread {
     private User currentUser;
     private String currentRoom;
 
+
     public ClientHandler(Socket socket) {
         try {
             this.socket = socket;
+
+
             this.out = new ObjectOutputStream(socket.getOutputStream());
             this.in = new ObjectInputStream(socket.getInputStream());
             this.start();
@@ -42,10 +46,17 @@ public class ClientHandler extends Thread {
                         createRoom(command);
                     } else if (command.startsWith("LEAVE:")) {
                         leaveRoom();
-                    }else if (command.startsWith("LOGOUT:")) {
+                    } else if (command.startsWith("LOGOUT:")) {
                         handleLogout();
-                    }else if (command.startsWith("EDIT:")) {
+                    } else if (command.startsWith("EDIT:")) {
                         EditACC(command);
+                    } else if (command.startsWith("VIDEO_CALL:")) {
+                        videoCallRequest(command);
+                    } else if (command.startsWith("ACCEPT_CALL:")) {
+                        videoCallStart(command);
+                    }
+                    else if (command.startsWith("END_CALL:")) {
+                        videoCallEnd(command);
                     }
                 } else if (obj instanceof Message msg) {
                     System.out.println("Received message: " + msg.getContent() + " from room: " + msg.getRoomId());
@@ -72,19 +83,22 @@ public class ClientHandler extends Thread {
         User user = ServerMain.users.get(phone);
         if (user != null && user.getPassword().equals(pass)) {
             currentUser = user;
+            currentUser.setInetAddress(socket.getInetAddress());
             out.writeObject("SUCCESS");
             out.writeObject(user);
         } else {
             out.writeObject("FAIL");
         }
     }
-   private void handleLogout() throws IOException {
-          currentUser = null;
-          if (socket != null) {
-              socket.close();
-          }
-          out.writeObject("SUCCESS");
-      }
+
+    private void handleLogout() throws IOException {
+        currentUser = null;
+        if (socket != null) {
+            socket.close();
+        }
+        out.writeObject("SUCCESS");
+    }
+
     private void handleCreateAccount(String command) throws IOException {
         String[] parts = command.split(":", 5);
         String phone = parts[1];
@@ -112,16 +126,16 @@ public class ClientHandler extends Thread {
 
         if (ServerMain.users.containsKey(phone)) {
             User u = ServerMain.users.get(phone);
-            if(newPhone != null) {
+            if (newPhone != null) {
                 u.setPhoneNumber(newPhone);
             }
-            if(name != null) {
+            if (name != null) {
                 u.setName(name);
             }
-            if(newpass != null) {
+            if (newpass != null) {
                 u.setPassword(newpass);
             }
-            if(base64 != null) {
+            if (base64 != null) {
                 u.setBase64ProfilePic(base64);
             }
         } else {
@@ -141,6 +155,10 @@ public class ClientHandler extends Thread {
 
         currentRoom = roomId;
         ServerMain.roomClients.get(roomId).add(out);
+        if(!ServerMain.roomUsers.containsKey(roomId)) {
+            ServerMain.roomUsers.put(roomId, new ArrayList<>());
+        }
+        ServerMain.roomUsers.get(roomId).add(currentUser);
         // Send chat history
 
         List<Message> history = new ChatDatabase().loadRoomChat(currentRoom);
@@ -153,13 +171,12 @@ public class ClientHandler extends Thread {
         for (ObjectOutputStream o : clients) {
 
 
-
-                try {
-                    o.writeObject(msg);
-                    System.out.println("Broadcasting message to room: " + msg.getRoomId() + " - " + msg.getContent());
-                    o.flush();
-                } catch (IOException ignored) {
-                }
+            try {
+                o.writeObject(msg);
+                System.out.println("Broadcasting message to room: " + msg.getRoomId() + " - " + msg.getContent());
+                o.flush();
+            } catch (IOException ignored) {
+            }
 
         }
     }
@@ -191,7 +208,7 @@ public class ClientHandler extends Thread {
             ServerMain.roomClients.putIfAbsent(roomId, new ArrayList<>());
 
             // Add this client’s output stream to the room
-            ServerMain.roomClients.get(roomId).add(out);
+//            ServerMain.roomClients.get(roomId).add(out);
 
 
             // Notify the client that they have joined the room
@@ -230,4 +247,94 @@ public class ClientHandler extends Thread {
         }
 
     }
+
+    public void videoCallRequest(String command) throws IOException {
+        String[] parts = command.split(":", 2);
+        String roomId = parts[1];
+        System.out.println("Video call request for room: " + roomId);
+
+        if (ServerMain.roomClients.get(roomId).size() != 2) {
+            System.out.println(ServerMain.roomClients.get(roomId).size());
+            System.out.println("failed to start video call, room does not have 2 clients");
+            out.writeObject("FAILED");
+            return;
+        }
+
+
+        List<ObjectOutputStream> clients = ServerMain.roomClients.get(roomId);
+
+        ObjectOutputStream receiverOut;
+        if (clients.get(0).equals(out)) {
+            receiverOut = clients.get(1);
+        } else {
+            receiverOut = clients.get(0);
+        }
+
+        receiverOut.writeObject("RECEIVE_CALL");
+        receiverOut.flush();
+        out.writeObject("WAITING" );
+        out.flush();
+
+    }
+
+    public void videoCallStart(String command) throws IOException {
+        String[] parts = command.split(":", 2);
+        String roomId = parts[1];
+
+        if (!currentRoom.equals(roomId)) {
+            out.writeObject("FAILED");
+            return;
+        }
+
+        if (ServerMain.roomClients.get(roomId).size() != 2) {
+            out.writeObject("FAILED");
+            return;
+        }
+
+
+        List<ObjectOutputStream> clients = ServerMain.roomClients.get(roomId);
+        List<User> users = ServerMain.roomUsers.get(roomId);
+
+        InetAddress client1Address = users.get(0).getInetAddress();
+        InetAddress client2Address = users.get(1).getInetAddress();
+
+        // start relay server one relay server for each room
+        if (!ServerMain.relayServers.containsKey(roomId)) {
+            VideoCallManager relayServer = new VideoCallManager( client1Address, client2Address);
+            ServerMain.relayServers.put(roomId, relayServer);
+            relayServer.startCall();
+        }
+
+
+
+
+
+
+        clients.get(0).writeObject("ACCEPT_CALL");
+        clients.get(0).flush();
+
+        clients.get(1).writeObject("ACCEPT_CALL");
+        clients.get(1).flush();
+
+    }
+
+    public void videoCallEnd(String command) throws IOException {
+        String[] parts = command.split(":", 2);
+        String roomId = parts[1];
+
+        ServerMain.relayServers.get(roomId).stopCall();
+        List<ObjectOutputStream> clients = ServerMain.roomClients.get(roomId);
+
+
+
+
+
+        clients.get(0).writeObject("END_CALL");
+        clients.get(0).flush();
+
+        clients.get(1).writeObject("END_CALL");
+        clients.get(1).flush();
+
+    }
+
 }

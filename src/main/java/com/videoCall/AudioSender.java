@@ -5,13 +5,18 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 
-public class AudioSender implements Runnable {
+public class AudioSender extends Thread {
     private final String serverIP;
     private final int serverPort;
+    private volatile boolean running = true;
 
     public AudioSender(String serverIP, int serverPort) {
         this.serverIP = serverIP;
         this.serverPort = serverPort;
+    }
+
+    public void stopThread() {
+        running = false;
     }
 
     @Override
@@ -25,7 +30,7 @@ public class AudioSender implements Runnable {
 
             byte[] buffer = new byte[512];
 
-            while (true) {
+            while (running) {
                 int count = microphone.read(buffer, 0, buffer.length);
                 if (count > 0) {
                     DatagramPacket packet = new DatagramPacket(buffer, count, serverAddr, serverPort);

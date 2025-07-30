@@ -4,11 +4,16 @@ import javax.sound.sampled.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 
-public class AudioReceiver implements Runnable {
+public class AudioReceiver extends Thread {
     private final int listenPort;
+    private volatile boolean running = true;
 
     public AudioReceiver(int listenPort) {
         this.listenPort = listenPort;
+    }
+
+    public void stopThread() {
+        running = false;
     }
 
     @Override
@@ -21,7 +26,7 @@ public class AudioReceiver implements Runnable {
 
             byte[] buffer = new byte[512];
 
-            while (true) {
+            while (running) {
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                 socket.receive(packet);
                 speakers.write(packet.getData(), 0, packet.getLength());
