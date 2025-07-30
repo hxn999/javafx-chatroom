@@ -7,11 +7,38 @@ public class User implements Serializable {
     private String name;
     private String password;
     private String base64ProfilePic;
+    boolean isLoggedIn = false;
+
+    private static final long serialVersionUID = 8853772668397633721L;
 
     public User(String phoneNumber, String name, String password, String base64ProfilePic) {
         this.phoneNumber = phoneNumber;
         this.name = name;
         this.password = password;
+        this.base64ProfilePic = base64ProfilePic;
+    }
+
+    public void setLoggedIn(boolean loggedIn) {
+        isLoggedIn = loggedIn;
+    }
+
+    public boolean isLoggedIn() {
+        return isLoggedIn;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public void setBase64ProfilePic(String base64ProfilePic) {
         this.base64ProfilePic = base64ProfilePic;
     }
 

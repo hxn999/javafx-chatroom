@@ -5,6 +5,6 @@ public enum Pages {
     CREATE_ACCOUNT,
     CHAT,
     SETTINGS,
-    BLOCK
+    EDITACCOUNT
 }
 

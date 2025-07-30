@@ -42,6 +42,7 @@ public class LoginController {
                 NetworkUtil.setCurrentPhone(user.getPhoneNumber());
 
                 ChatController.currentUser = user;
+                user.setLoggedIn(true);
 
                 new Page().Goto(Pages.CHAT);
             } else {

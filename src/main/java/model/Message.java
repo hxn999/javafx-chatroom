@@ -6,15 +6,17 @@ import java.time.LocalDateTime;
 public class Message implements Serializable {
     private String roomId;
     private String senderPhone;
+    private String senderName;
     private String content;
     private LocalDateTime timestamp;
     private MessageType type;
     private String image; // For image messages
     private byte[] voiceData; // For voice messages
 
-    public Message(String roomId, String senderPhone, String content) {
+    public Message(String roomId, String senderPhone, String senderName, String content, LocalDateTime now) {
         this.roomId = roomId;
         this.senderPhone = senderPhone;
+        this.senderName = senderName;
         this.content = content;
         this.timestamp = LocalDateTime.now();
         this.type = MessageType.TEXT; // Default type
@@ -42,6 +44,10 @@ public class Message implements Serializable {
         this.senderPhone = senderPhone;
         this.content = content;
         this.timestamp = timestamp;
+    }
+
+    public String getSenderName() {
+        return senderName;
     }
 
     public String getRoomId() { return roomId; }
