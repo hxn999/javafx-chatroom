@@ -50,6 +50,18 @@ public class Message implements Serializable {
         return senderName;
     }
 
+    public MessageType getType() {
+        return type;
+    }
+
+    public String getImage() {
+        return image;
+    }
+
+    public byte[] getVoiceData() {
+        return voiceData;
+    }
+
     public String getRoomId() { return roomId; }
     public String getSenderPhone() { return senderPhone; }
     public String getContent() { return content; }

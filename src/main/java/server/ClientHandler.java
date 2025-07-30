@@ -1,6 +1,7 @@
 package server;
 
 import model.Message;
+import model.MessageType;
 import model.User;
 
 import java.io.*;
@@ -47,7 +48,8 @@ public class ClientHandler extends Thread {
                     }else if (command.startsWith("EDIT:")) {
                         EditACC(command);
                     }
-                } else if (obj instanceof Message msg) {
+                }
+                else if (obj instanceof Message msg) {
                     System.out.println("Received message: " + msg.getContent() + " from room: " + msg.getRoomId());
 //                    ServerMain.roomHistory.computeIfAbsent(msg.getRoomId(), k -> new ArrayList<>()).add(msg);
                     // After receiving a Message `msg` from client
