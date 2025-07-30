@@ -2,6 +2,7 @@ module com.client {
     requires javafx.controls;
     requires javafx.fxml;
     requires java.base;
+    requires javafx.media;
 
     exports com.client;
     exports com.client.login;
@@ -14,4 +15,6 @@ module com.client {
     opens com.client.createAccount to javafx.fxml;
     opens com.client.chat to javafx.fxml;
     opens model to javafx.base;
+    opens com.client.Settings to javafx.fxml;
+    opens com.client.Settings.AccountDetails to javafx.fxml;
 }

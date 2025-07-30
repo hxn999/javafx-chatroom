@@ -2,11 +2,8 @@ package com.client;
 
 
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.stage.Stage;
-import javafx.event.ActionEvent;
 
 import static com.client.ClientMain.globalStage;
 
@@ -24,7 +21,7 @@ public class Page {
                 loader = new FXMLLoader(getClass().getResource("/login.fxml"));
                 break;
             case SETTINGS:
-                loader = new FXMLLoader(getClass().getResource("/views/settings.fxml"));
+                loader = new FXMLLoader(getClass().getResource("/settings.fxml"));
                 break;
             case CREATE_ACCOUNT:
                 loader = new FXMLLoader(getClass().getResource("/create_account.fxml"));
@@ -32,9 +29,8 @@ public class Page {
             case CHAT:
                 loader = new FXMLLoader(getClass().getResource("/chat.fxml"));
                 break;
-
-            case BLOCK:
-                loader = new FXMLLoader(getClass().getResource("/views/blockUser.fxml"));
+            case EDITACCOUNT:
+                loader = new FXMLLoader(getClass().getResource("/accountDetails.fxml"));
                 break;
         }
 

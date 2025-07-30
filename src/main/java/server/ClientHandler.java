@@ -42,6 +42,10 @@ public class ClientHandler extends Thread {
                         createRoom(command);
                     } else if (command.startsWith("LEAVE:")) {
                         leaveRoom();
+                    }else if (command.startsWith("LOGOUT:")) {
+                        handleLogout();
+                    }else if (command.startsWith("EDIT:")) {
+                        EditACC(command);
                     }
                 } else if (obj instanceof Message msg) {
                     System.out.println("Received message: " + msg.getContent() + " from room: " + msg.getRoomId());
@@ -74,7 +78,13 @@ public class ClientHandler extends Thread {
             out.writeObject("FAIL");
         }
     }
-
+   private void handleLogout() throws IOException {
+          currentUser = null;
+          if (socket != null) {
+              socket.close();
+          }
+          out.writeObject("SUCCESS");
+      }
     private void handleCreateAccount(String command) throws IOException {
         String[] parts = command.split(":", 5);
         String phone = parts[1];
@@ -89,6 +99,33 @@ public class ClientHandler extends Thread {
             ServerMain.users.put(phone, u);
             saveUsersToFile(); // ✅ Save all users
             out.writeObject("CREATED");
+        }
+    }
+
+    private void EditACC(String command) throws IOException {
+        String[] parts = command.split(":", 6);
+        String phone = parts[1];
+        String newPhone = parts[2];
+        String name = parts[3];
+        String newpass = parts[4];
+        String base64 = parts[5];
+
+        if (ServerMain.users.containsKey(phone)) {
+            User u = ServerMain.users.get(phone);
+            if(newPhone != null) {
+                u.setPhoneNumber(newPhone);
+            }
+            if(name != null) {
+                u.setName(name);
+            }
+            if(newpass != null) {
+                u.setPassword(newpass);
+            }
+            if(base64 != null) {
+                u.setBase64ProfilePic(base64);
+            }
+        } else {
+            System.out.println("User not found");
         }
     }
 

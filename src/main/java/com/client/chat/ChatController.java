@@ -6,21 +6,40 @@ import com.client.Pages;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
+import javafx.stage.Stage;
 import model.Message;
 import model.User;
 
+import java.io.ByteArrayInputStream;
 import java.io.ObjectInputStream;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 public class ChatController {
 
+    @FXML
+    private  ImageView sendIcon;
+    @FXML
+    private Button settingsButton;
     @FXML
     private VBox messageContainer;
     @FXML
@@ -63,13 +82,40 @@ public class ChatController {
 //        loadRoomHistory();
 //    }
 
+    public static ImageView getImageViewFromBase64(String base64String) {
+        if (base64String == null || base64String.isEmpty()) {
+            return null;
+        }
+
+        String base64Data = base64String;
+        if (base64String.startsWith("data:image")) {
+            int commaIndex = base64String.indexOf(',');
+            if (commaIndex != -1) {
+                base64Data = base64String.substring(commaIndex + 1);
+            }
+        }
+
+        try {
+            byte[] decodedBytes = Base64.getDecoder().decode(base64Data);
+            ByteArrayInputStream inputStream = new ByteArrayInputStream(decodedBytes);
+            Image image = new Image(inputStream);
+            return new ImageView(image);
+        } catch (IllegalArgumentException e) {
+            System.err.println("Error decoding Base64 string: " + e.getMessage());
+            return null;
+        }
+    }
+
 
 
 
 
     @FXML
     private void initialize() {
+        settingsButton.setOnAction(this::onSettingsClicked);
         sendButton.setOnAction(e -> sendMessage());
+        userName.setText(currentUser.getName());
+        userImage.setImage(getImageViewFromBase64(currentUser.getBase64ProfilePic()).getImage());
     }
 
     private void sendMessage() {
@@ -77,7 +123,7 @@ public class ChatController {
         if (text.isEmpty()) return;
 
         try {
-            Message msg = new Message(roomLabel.getText(), currentUser.getPhoneNumber(), text, LocalDateTime.now());
+            Message msg = new Message(roomLabel.getText(), currentUser.getPhoneNumber(), currentUser.getName(), text, LocalDateTime.now());
 
             NetworkUtil.getOut().writeObject(msg);
             NetworkUtil.getOut().flush();
@@ -129,15 +175,66 @@ public class ChatController {
 
     }
 
-    private void addMessageToUI(Message msg) {
-        String sender = msg.getSenderPhone().equals(currentUser.getPhoneNumber()) ? "You" : msg.getSenderPhone();
-        String timestamp = msg.getTimestamp().format(DateTimeFormatter.ofPattern("HH:mm"));
-        String display = sender + " [" + timestamp + "]: " + msg.getContent();
-
-        Label label = new Label(display);
-        label.setWrapText(true);
-        messageContainer.getChildren().add(label);
+    @FXML
+    private void onSettingsClicked(ActionEvent event) {
+        try {
+            new Page().Goto(Pages.SETTINGS);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
+
+    // Build text content (show sender for others only)
+    private void addMessageBubble(String text, boolean mine, LocalTime time, String sender) {
+        // HBox to align the whole message bubble left/right
+        HBox messageContainer = new HBox();
+        messageContainer.setAlignment(mine ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+        messageContainer.setPadding(new Insets(5, 10, 5, 10));
+
+        // Message Text (just the text content now)
+        Text messageText = new Text(text);
+        messageText.setStyle("-fx-fill: " + (mine ? "white" : "black") + "; -fx-font-size: 14;");
+
+        // Message bubble styling
+        TextFlow messageBubble = new TextFlow(messageText);
+        messageBubble.setPadding(new Insets(10));
+        messageBubble.setMaxWidth(300); // Prevent stretching full width
+        messageBubble.setStyle(
+                mine
+                        ? "-fx-background-color: #0084ff; -fx-background-radius: 15 0 15 15;"
+                        : "-fx-background-color: #8e24aa; -fx-background-radius: 0 15 15 15;"
+        );
+
+        // Timestamp label
+        Label timeLabel = new Label(time.format(DateTimeFormatter.ofPattern("hh:mm a")));
+        timeLabel.setStyle("-fx-text-fill: " + (mine ? "#aad4ff" : "#dddddd") + "; -fx-font-size: 10;");
+
+        // VBox to stack sender (if not mine), bubble, and time
+        VBox messageContent = new VBox(3);
+        messageContent.setAlignment(mine ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+        messageContent.setMaxWidth(Region.USE_PREF_SIZE);
+
+        // Add sender label above bubble for other users
+        if (!mine && sender != null) {
+            Label senderLabel = new Label(sender);
+            senderLabel.setStyle("-fx-text-fill: #666666; -fx-font-size: 12; -fx-font-weight: bold;");
+            messageContent.getChildren().add(senderLabel);
+        }
+
+        messageContent.getChildren().addAll(messageBubble, timeLabel);
+        HBox.setHgrow(messageContent, Priority.NEVER); // prevent stretching
+
+        // Final add to message container
+        messageContainer.getChildren().add(messageContent);
+        this.messageContainer.getChildren().add(messageContainer); // <-- your outer VBox holding all messages
+    }
+
+    private void addMessageToUI(Message msg) {
+            boolean mine = msg.getSenderPhone().equals(currentUser.getPhoneNumber());
+            String sender = mine ? "You" : msg.getSenderName();
+            LocalTime time = msg.getTimestamp().toLocalTime();
+            addMessageBubble(msg.getContent(), mine, time, sender);
+        }
 
     private void populateMessages() {
         messageContainer.getChildren().clear();

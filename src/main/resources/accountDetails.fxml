@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+
+<?import javafx.scene.layout.StackPane?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.client.Settings.AccountDetails.AccountDetailsController"
+            prefWidth="360" prefHeight="640"
+            minWidth="360" minHeight="640"
+            maxWidth="360" maxHeight="640"
+            style="-fx-background-color: #F0F2F5;"
+            stylesheets="@styles/style.css">
+
+    <!-- Top Bar (Messenger Style) -->
+    <HBox prefHeight="56" prefWidth="360"
+          style="-fx-background-color: #0084FF; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 4, 0, 0, 2);"
+          AnchorPane.topAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0"
+          alignment="CENTER_LEFT" spacing="16" stylesheets="@styles/style.css">
+        <Button fx:id="backButton"
+                onAction="#handleBack"
+                style="-fx-background-color: transparent;">
+            <graphic>
+                <javafx.scene.shape.SVGPath content="M 16 0 L 0 12 L 16 24"
+                                            style="-fx-fill: white; -fx-scale-x: 1.2; -fx-scale-y: 1.2;" />
+            </graphic>
+        </Button>
+        <Label text="Edit Profile"
+               style="-fx-text-fill: white; -fx-font-size: 18; -fx-font-weight: bold;" />
+    </HBox>
+
+    <!-- Content Container with padding via style -->
+    <VBox spacing="16" AnchorPane.topAnchor="72" AnchorPane.leftAnchor="16" AnchorPane.rightAnchor="16"
+          style="-fx-padding: 16;" stylesheets="@styles/style.css">
+        <!-- Profile Picture & Change Photo -->
+        <VBox alignment="CENTER" spacing="12">
+            <StackPane>
+                <!-- Outer circle as border -->
+                <Circle fx:id="borderCircle" radius="52"
+                        style="-fx-fill: transparent;
+                   -fx-stroke: #0084FF;
+                   -fx-stroke-width: 4;" />
+                <!-- Your image, clipped to 50px radius -->
+                <ImageView fx:id="profileImageView"
+                           fitWidth="100" fitHeight="100"
+                           preserveRatio="true">
+                    <clip>
+                        <Circle fx:id="clipCircle"/>
+                    </clip>
+                </ImageView>
+            </StackPane>
+
+            <Button fx:id="changePhotoButton" text="Change Photo"
+                    style="-fx-background-color: transparent;
+                 -fx-text-fill: #0084FF;
+                 -fx-font-weight: bold;" />
+        </VBox>
+
+        <!-- Username Field -->
+        <VBox spacing="6" stylesheets="@styles/style.css">
+            <Label text="Username" style="-fx-text-fill: #65676B; -fx-font-size: 14;" />
+            <TextField fx:id="usernameField" promptText="Enter Your new Name"
+                       style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #CCD0D5;" />
+        </VBox>
+
+        <!-- Phone Field -->
+        <VBox spacing="6" stylesheets="@styles/style.css">
+            <Label text="Phone Number" style="-fx-text-fill: #65676B; -fx-font-size: 14;" />
+            <TextField fx:id="phoneField" promptText="Enter new Phone number e.g. +880 123 456 7890"
+                       style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #CCD0D5;" />
+        </VBox>
+        <!-- Status Message -->
+        <VBox spacing="6" stylesheets="@styles/style.css">
+            <Label text="New Password" style="-fx-text-fill: #65676B; -fx-font-size: 14;" />
+            <TextField fx:id="newPasswordField" promptText="Enter new password"
+                      style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #CCD0D5;" />
+        </VBox>
+
+        <!-- Action Buttons -->
+        <HBox spacing="10" alignment="CENTER_RIGHT" stylesheets="@styles/style.css">
+            <Button fx:id="saveButton" text="Save"
+                    onAction="#handleSave"
+                    style="-fx-background-color: #0084FF; -fx-text-fill: white; -fx-background-radius: 8; -fx-padding: 8 16;"/>
+        </HBox>
+    </VBox>
+
+</AnchorPane>
+
+
+
+
+
