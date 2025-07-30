@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane xmlns:fx="http://javafx.com/fxml" fx:controller="com.client.blockPeople.blockController"
+            prefWidth="1000" prefHeight="600" stylesheets="@../styles/style.css">
+
+    <children>
+        <VBox alignment="CENTER" spacing="20"
+              layoutX="250" layoutY="100"
+              prefWidth="500" prefHeight="400">
+
+            <children>
+                <Label text="Block User"
+                       style="-fx-font-size: 24px; -fx-font-weight: bold;" />
+
+                <TextField fx:id="phoneNumberField"
+                           promptText="Enter Phone Number"
+                           prefWidth="400"
+                           style="-fx-font-size: 14px;" />
+
+                <Button text="Search"
+                        onAction="#onSearchClicked"
+                        prefWidth="150"
+                        style="-fx-font-size: 14px;" />
+
+                <Label fx:id="userInfoLabel"
+                       text=""
+                       wrapText="true"
+                       prefWidth="400"
+                       style="-fx-text-fill: #444; -fx-font-size: 13px;" />
+
+                <Button text="Block User"
+                        fx:id="blockUserButton"
+                        onAction="#onBlockClicked"
+                        disable="true"
+                        prefWidth="180"
+                        style="-fx-background-color: red; -fx-text-fill: white; -fx-font-size: 14px;" />
+            </children>
+
+            <padding>
+                <Insets top="20" left="20" right="20" bottom="20"/>
+            </padding>
+        </VBox>
+    </children>
+    <Button fx:id="ChatBackBtn" layoutX="54.0" layoutY="31.0" mnemonicParsing="false" onAction="#ChatBackHandler" styleClass="login-btn" text="&lt;- Back" />
+</AnchorPane>

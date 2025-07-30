@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<AnchorPane cache="true" cacheHint="SPEED" prefHeight="500" prefWidth="1000" style="-fx-background-color: #e0f0ff;" stylesheets="@styles/style.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.client.createAccount.CreateAccountController">
+
+
+    <!-- Centered & Enlarged Logo -->
+    <ImageView fx:id="logoView" fitHeight="150" fitWidth="150" layoutX="456.0" layoutY="12.0" preserveRatio="true" styleClass="logo-image">
+        <image>
+            <Image url="@icons/messenger_logo.png" />
+        </image>
+    </ImageView>
+
+    <!-- Form Container -->
+    <VBox alignment="CENTER" layoutX="400" layoutY="200" spacing="15">
+        <TextField fx:id="nameField" prefWidth="300" promptText="Name" />
+        <TextField fx:id="phoneField" prefWidth="300" promptText="Phone" />
+        <PasswordField fx:id="passwordField" prefWidth="300" promptText="Password" />
+
+        <!-- Combined Add Picture and Create Account Buttons -->
+        <HBox alignment="CENTER" spacing="10">
+            <Button fx:id="choosePicBtn" contentDisplay="CENTER" opacity="0.94" prefHeight="40.0" prefWidth="127.0" text="Add Picture" textAlignment="JUSTIFY" wrapText="true" />
+            <ImageView fx:id="avatarPreview" fitHeight="50" fitWidth="50.0" preserveRatio="true" />
+        </HBox>
+
+        <Button fx:id="createBtn" onAction="#createBtnHandler" styleClass="primary-button" text="Create Account" />
+
+
+    </VBox>
+    <Button fx:id="loginBackBtn" layoutX="54.0" layoutY="31.0" mnemonicParsing="false" onAction="#loginBackHandler" styleClass="login-btn" text="&lt;- Back" />
+</AnchorPane>

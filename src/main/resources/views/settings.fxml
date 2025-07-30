@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.geometry.Pos?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.client.Settings.SettingsController"
+      fx:id="root"
+      spacing="10"
+      prefWidth="1000" prefHeight="600"
+      minWidth="1000" minHeight="600"
+      maxWidth="1000" maxHeight="600"
+      style="-fx-background-color: #f9f9fb; -fx-padding: 20; -fx-border-radius: 10;"
+      stylesheets="@../styles/style.css">
+
+    <padding>
+        <Insets top="10" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <Label text="Settings"
+           style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"
+           stylesheets="@../styles/style.css"/>
+    <Separator/>
+
+    <TitledPane text="Account" expanded="true" style="-fx-font-size: 16px;" stylesheets="@../styles/style.css">
+        <content>
+            <VBox spacing="16">
+                <padding>
+                    <Insets top="10" right="10" bottom="10" left="10"/>
+                </padding>
+
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Button fx:id="editProfileButton"
+                            text="Edit Profile"
+                            style="-fx-font-size: 16px; -fx-background-color: linear-gradient(to right, #4facfe, #00f2fe); -fx-text-fill: white; -fx-background-radius: 6;"
+                            stylesheets="@../styles/style.css"/>
+                </HBox>
+
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="Phone Number" style="-fx-text-fill: #34495e;"/>
+                    <Label fx:id="phoneNumberLabel" text="+8801XXXXXXXXX" style="-fx-text-fill: #2c3e50;"/>
+                </HBox>
+            </VBox>
+        </content>
+    </TitledPane>
+
+    <TitledPane text="Notifications" expanded="false" style="-fx-font-size: 16px;" stylesheets="@../styles/style.css">
+        <content>
+            <VBox spacing="16">
+                <padding>
+                    <Insets top="10" right="10" bottom="10" left="10"/>
+                </padding>
+
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <CheckBox fx:id="messageNotifCheckbox" text="Message notifications" style="-fx-font-size: 14px;"/>
+                </HBox>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <CheckBox fx:id="soundNotifCheckbox" text="Sound" style="-fx-font-size: 14px;"/>
+                </HBox>
+            </VBox>
+        </content>
+    </TitledPane>
+
+    <TitledPane text="Privacy" expanded="false" style="-fx-font-size: 16px;" stylesheets="@../styles/style.css">
+        <content>
+            <VBox spacing="16">
+                <padding>
+                    <Insets top="10" right="10" bottom="10" left="10"/>
+                </padding>
+
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <CheckBox fx:id="readReceiptsCheckbox" text="Read receipts" style="-fx-font-size: 14px;"/>
+                </HBox>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <CheckBox fx:id="lastSeenCheckbox" text="Last seen" style="-fx-font-size: 14px;"/>
+                </HBox>
+            </VBox>
+        </content>
+    </TitledPane>
+
+    <!-- Combined Back and Logout Buttons -->
+    <HBox spacing="10" alignment="CENTER_LEFT" stylesheets="@../styles/style.css">
+        <Button fx:id="backButton"
+                text="← Back"
+                style="-fx-background-color: #dff9fb; -fx-text-fill: #130f40; -fx-background-radius: 6; -fx-font-size: 14px;"
+                onAction="#handleBack"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="logoutButton"
+                text="Log Out"
+                style="-fx-background-color: linear-gradient(to right, #ff6a00, #ee0979); -fx-text-fill: white; -fx-background-radius: 6; -fx-font-size: 14px;"
+                onAction="#handleLogout"/>
+    </HBox>
+
+</VBox>
+
+
