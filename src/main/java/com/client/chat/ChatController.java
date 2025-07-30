@@ -44,24 +44,13 @@ public class ChatController {
     @FXML
     private Label roomLabel;
 
+
     private List<Message> messages;
-
-
     public static User currentUser;
+    public volatile boolean  isRecording = false;
+    private String base64ImageString ;
+    public  byte[] voiceData;
 
-//    public void setRoomIdAndUser(String roomId, User user) {
-//        this.roomId.setText(roomId);
-//        this.currentUser = user;
-//
-//        userName.setText(user.getName());
-//        if (user.getBase64ProfilePic() != null) {
-//            Image image = new Image("data:image/png;base64," + user.getBase64ProfilePic());
-//            userImage.setImage(image);
-//        }
-//
-//        listenForMessages();
-//        loadRoomHistory();
-//    }
 
 
 
@@ -73,9 +62,14 @@ public class ChatController {
     }
 
     private void sendMessage() {
-        String text = messageField.getText().trim();
-        if (text.isEmpty()) return;
 
+
+        String text = messageField.getText().trim();
+
+        boolean hasImage = base64ImageString!=null && !base64ImageString.isEmpty();
+        boolean hasText = !text.isEmpty();
+        boolean hasVoice = voiceData.length!=0; // Placeholder for voice message logic
+        if (!hasText && !hasImage &&  !hasVoice ) return;
         try {
             Message msg = new Message(roomLabel.getText(), currentUser.getPhoneNumber(), text, LocalDateTime.now());
 

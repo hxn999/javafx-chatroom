@@ -2,6 +2,8 @@ module com.client {
     requires javafx.controls;
     requires javafx.fxml;
     requires java.base;
+    requires java.desktop;
+    requires webcam.capture;
 
     exports com.client;
     exports com.client.login;
