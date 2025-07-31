@@ -9,6 +9,7 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
 <AnchorPane prefHeight="600.0" prefWidth="1000.0" stylesheets="@./styles/style.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.client.chat.ChatController">
@@ -24,13 +25,15 @@
                <children>
 
                   <TextField fx:id="roomId" prefHeight="43.0" prefWidth="203.0" promptText="Enter room Id" style="-fx-text-fill: black;" />
-                  <Button fx:id="joinRoomBtn" mnemonicParsing="false" onAction="#joinRoomHandler" text="JOIN" />
+                  <Button fx:id="joinRoomBtn" mnemonicParsing="false" onAction="#joinRoomHandler" styleClass="join-btn" text="JOIN" />
+
                </children>
             </HBox>
             <HBox alignment="CENTER" prefHeight="57.0" prefWidth="342.0" style="-fx-spacing: 5;" styleClass="accent-color">
                <children>
                   <TextField fx:id="createRoomId" prefHeight="39.0" prefWidth="191.0" promptText="Create Room ID" style="-fx-text-fill: black;" />
-                  <Button fx:id="createRoomBtn" mnemonicParsing="false" onAction="#createRoomHandler" text="CREATE" />
+                  <Button fx:id="createRoomBtn" mnemonicParsing="false" onAction="#createRoomHandler" styleClass="create-btn" text="CREATE" />
+
                </children>
             </HBox>
 
@@ -84,7 +87,8 @@
                   <Label fx:id="roomLabel" style="-fx-text-fill: white; -fx-font-size: 16px;" text="Room #" />
                </children>
             </HBox>
-            <Button fx:id="leaveRoomBtn" mnemonicParsing="false" onAction="#leaveRoomHandler" text="LEAVE" />
+            <Button fx:id="leaveRoomBtn" mnemonicParsing="false" onAction="#leaveRoomHandler" styleClass="leave-btn" text="LEAVE" />
+
          </children>
       </HBox>
 
@@ -102,12 +106,20 @@
       <!-- Message input -->
       <HBox alignment="CENTER" layoutX="344.0" layoutY="546.0" prefHeight="58.0" prefWidth="662.0" style="-fx-background-color: #3b4ef7; -fx-spacing: 30;">
          <children>
+            <StackPane style="-fx-background-color: #007BFF; -fx-background-radius: 10; -fx-padding: 5;">
+               <ImageView fx:id="VoiceSend" fitHeight="35.0" fitWidth="35.0" styleClass="voice-btn">
+                  <image>
+                     <Image url="@icons/voice_pic.png" />
+                  </image>
+               </ImageView>
+            </StackPane>
+
             <ImageView fx:id="sendIcon" fitHeight="35.0" fitWidth="35.0" styleClass="send-btn">
                <image>
                   <Image url="@icons/icons8-photo-30.png" />
                </image>
             </ImageView>
-            <TextField fx:id="messageField" prefHeight="37.0" prefWidth="457.0" promptText="Write a message..." styleClass="search-input" />
+            <TextField fx:id="messageField" prefHeight="38.0" prefWidth="391.0" promptText="Write a message..." styleClass="search-input" />
             <Button fx:id="sendButton" prefHeight="35.0" prefWidth="35.0" styleClass="send-btn">
                <graphic>
                   <ImageView fitHeight="35.0" fitWidth="35.0">

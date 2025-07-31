@@ -7,6 +7,10 @@ import com.videoCall.AudioReceiver;
 import com.videoCall.AudioSender;
 import com.videoCall.VideoReceiver;
 import com.videoCall.VideoSender;
+import com.voiceMessage.VoicePlayback;
+import com.voiceMessage.VoiceRecorder;
+import com.voiceMessage.VoiceUtil;
+import javafx.animation.*;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -19,29 +23,41 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
+import javafx.util.Duration;
 import model.Message;
+import model.MessageType;
 import model.User;
 
+import javax.sound.midi.Sequencer;
+import javax.sound.sampled.LineUnavailableException;
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 public class ChatController {
 
     public static ChatController chatController;
 
+    @FXML
+    private ImageView VoiceSend;
     @FXML
     private ImageView sendIcon;
     @FXML
@@ -76,9 +92,11 @@ public class ChatController {
 
     private List<Message> messages;
     public static User currentUser;
-    public volatile boolean isRecording = false;
-    private String base64ImageString;
-    public byte[] voiceData;
+    public volatile boolean  isRecording = false;
+    private String base64ImageString ;
+    public  byte[] voiceData;
+    public volatile boolean isMsgListening = false;
+    public String currentRoomId;
 
 
     // video call threads
@@ -113,11 +131,17 @@ public class ChatController {
     }
 
 
+
+
+
     @FXML
     private void initialize() {
 
-
+        leaveRoomBtn.setVisible(false);
+        videoCallBtn.setVisible(false);
         chatController = this;
+        VoiceSend.setOnMouseClicked(event -> {recordVoice();});
+        sendIcon.setOnMouseClicked(event -> selectImage());
         settingsButton.setOnAction(this::onSettingsClicked);
         sendButton.setOnAction(e -> sendMessage());
         userName.setText(currentUser.getName());
@@ -131,32 +155,69 @@ public class ChatController {
 
         boolean hasImage = base64ImageString != null && !base64ImageString.isEmpty();
         boolean hasText = !text.isEmpty();
-//        boolean hasVoice = voiceData.length!=0; // Placeholder for voice message logic
-        if (!hasText) return;
-        try {
-            Message msg = new Message(roomLabel.getText(), currentUser.getPhoneNumber(), currentUser.getName(), text, LocalDateTime.now());
+        boolean hasVoice = voiceData != null && voiceData.length != 0;// Placeholder for voice message logic
+        if (!hasText && !hasImage && !hasVoice) return;
 
-            NetworkUtil.getOut().writeObject(msg);
-            NetworkUtil.getOut().flush();
+        if(hasText) {
+            try {
+                Message msg = new Message(roomLabel.getText(), currentUser.getPhoneNumber(), currentUser.getName(), text, LocalDateTime.now());
 
-            messageField.clear();
-        } catch (Exception e) {
-            e.printStackTrace();
-            showAlert("Failed to send message.");
+                NetworkUtil.getOut().writeObject(msg);
+                NetworkUtil.getOut().flush();
+                System.out.println("Received Message: " + msg);
+
+                messageField.clear();
+            } catch (Exception e) {
+                e.printStackTrace();
+                showAlert("Failed to send message.");
+            }
+        }
+        if(hasImage) {
+            try {
+                Message msg = new Message(roomLabel.getText(), currentUser.getPhoneNumber(), base64ImageString, MessageType.IMAGE);
+                NetworkUtil.getOut().writeObject(msg);
+                NetworkUtil.getOut().flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+                showAlert("Failed to send Image.");
+            }
+        }
+        if(hasVoice){
+            try{
+                Message msg = new Message(roomLabel.getText(), currentUser.getPhoneNumber(), voiceData, MessageType.VOICE);
+                NetworkUtil.getOut().writeObject(msg);
+                NetworkUtil.getOut().flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+                showAlert("Failed to send Image.");
+            }
+
         }
     }
 
-    private void listenForMessages() {
-        Thread thread = new Thread(() -> {
+    private Thread messageListenerThread;
+
+    private void startMessageListener() {
+        stopListenForMessages(); // Stop any previous listener
+        isMsgListening = true;
+        messageListenerThread = new Thread(() -> {
             try {
-                ObjectInputStream in = NetworkUtil.getIn();
-                while (true) {
+                while (isMsgListening) {
+                    ObjectInputStream in = NetworkUtil.getIn(); // Always get a fresh stream reference
                     Object obj = in.readObject();
-                    if (obj instanceof Message msg && msg.getRoomId().equals(roomId.getText())) {
+
+                    if (obj instanceof Message msg && msg.getRoomId().equals(currentRoomId)) {
+                        System.out.println("Received Message: " + msg.getContent());
+                        System.out.println("before adding");
                         messages.add(msg);
-                        Platform.runLater(() -> addMessageToUI(msg));
+                        System.out.println("Adding message to UI: " + msg.getContent());
+                        Platform.runLater(() -> {
+                            System.out.println("Adding message from: " + msg.getSenderName() + " -> " + msg.getContent());
+                            addMessageToUI(msg);
+                        });
                     } else if (obj instanceof String response) {
 //                        videoCallBtn.setText(response);
+                        System.out.println(response);
                         if (response.equals("RECEIVE_CALL")) {
                             Platform.runLater(() -> {
                                 videoCallBtn.setText("RECEIVE CALL");
@@ -194,15 +255,47 @@ public class ChatController {
 
 
                             });
+                        }else if (response.equals("LEFT")) {
+                            isMsgListening = false; // ⬅️ Stop loop early outside UI thread
+
+                            Platform.runLater(() -> {
+                                showAlert("You have left the room.");
+                                messages = null;
+                                messageContainer.getChildren().clear(); // clear chat view
+                                roomLabel.setText("JOIN A ROOM");
+                                currentRoomId = null;
+                                leaveRoomBtn.setVisible(false);
+                                videoCallBtn.setVisible(false);
+                                joinRoomBtn.setDisable(false);
+                                createRoomBtn.setDisable(false);
+                                populateMessages(); // reset display
+                            });
+
+                            break;
                         }
                     }
                 }
             } catch (Exception e) {
+                e.printStackTrace();
                 Platform.runLater(() -> showAlert("Disconnected from server."));
+            }finally {
+                isMsgListening = false; // Ensure we stop listening
+                messageListenerThread = null; // Clear reference
             }
         });
-        thread.setDaemon(true);
-        thread.start();
+        messageListenerThread.setDaemon(true);
+        messageListenerThread.start();
+    }
+
+    private void listenForMessages() {
+        startMessageListener();
+    }
+
+    private void stopListenForMessages() {
+        isMsgListening = false;
+        if (messageListenerThread != null && messageListenerThread.isAlive()) {
+            messageListenerThread.interrupt();
+        }
     }
 
     private void loadRoomHistory() throws Exception {
@@ -280,12 +373,20 @@ public class ChatController {
         this.messageContainer.getChildren().add(messageContainer); // <-- your outer VBox holding all messages
     }
 
-    private void addMessageToUI(Message msg) {
-        boolean mine = msg.getSenderPhone().equals(currentUser.getPhoneNumber());
-        String sender = mine ? "You" : msg.getSenderName();
-        LocalTime time = msg.getTimestamp().toLocalTime();
-        addMessageBubble(msg.getContent(), mine, time, sender);
-    }
+    public void addMessageToUI(Message msg) {
+            boolean mine = msg.getSenderPhone().equals(currentUser.getPhoneNumber());
+            String sender = mine ? "You" : msg.getSenderName();
+            LocalTime time = msg.getTimestamp().toLocalTime();
+            if(msg.getType().equals(MessageType.IMAGE)) {
+                addImageBubble(msg.getImage(), mine, time, sender);
+            }else if(msg.getType().equals(MessageType.VOICE)) {
+                addVoiceBubble(msg.getVoiceData(), mine, time, sender);
+            }
+            else {
+                System.out.println("Reached in the addMessageToUI.....................");
+                addMessageBubble(msg.getContent(), mine, time, sender);
+            }
+        }
 
     private void populateMessages() {
         messageContainer.getChildren().clear();
@@ -334,9 +435,19 @@ public class ChatController {
             NetworkUtil.getOut().writeObject("CREATE_ROOM:" + newRoomId);
             NetworkUtil.getOut().flush();
 //            roomLabel.setText("Current Room: " + roomId);
-            loadRoomHistory();
-            roomLabel.setText(newRoomId);
-            populateMessages();
+//            loadRoomHistory();
+//            roomLabel.setText(newRoomId);
+//            populateMessages();
+            String response = (String) NetworkUtil.getIn().readObject();
+            if (response.startsWith("CREATED:")) {
+                System.out.println("Room created successfully.");
+            }
+            else {
+                showAlert("Failed to create room.");
+            }
+
+
+
         } catch (Exception e) {
             showAlert("Failed to create room.");
         }
@@ -352,36 +463,245 @@ public class ChatController {
         try {
             NetworkUtil.getOut().writeObject("JOIN:" + joiningRoomId);
             NetworkUtil.getOut().flush();
-//            roomLabel.setText("Current Room: " + roomId);
             loadRoomHistory();
             roomLabel.setText(joiningRoomId);
+            currentRoomId = joiningRoomId;
+            leaveRoomBtn.setVisible(true);
+            videoCallBtn.setVisible(true);
+            joinRoomBtn.setDisable(true);
+            createRoomBtn.setDisable(true);
             populateMessages();
-            listenForMessages();
+            listenForMessages(); // This now always starts a fresh listener
+            createRoomId.clear();
+            roomId.clear();
         } catch (Exception e) {
             showAlert("Failed to join room.");
         }
     }
 
+    //To play Voice
+    private void addVoiceBubble(byte[] audioData, boolean mine, LocalTime time, String sender) {
+        // HBox to align the whole message bubble left/right
+        HBox messageContainer = new HBox();
+        messageContainer.setAlignment(mine ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+        messageContainer.setPadding(new Insets(5, 10, 5, 10));
+
+        // Voice control elements
+        HBox voiceControls = new HBox(10);
+        voiceControls.setAlignment(Pos.CENTER_LEFT);
+        voiceControls.setPadding(new Insets(10));
+
+        // Play button
+        Button playButton = new Button("▶");
+        playButton.setStyle("-fx-font-size: 16px; -fx-background-color: transparent; -fx-text-fill: " +
+                (mine ? "white" : "black") + "; -fx-cursor: hand;");
+
+        // Voice duration/status label
+        Label durationLabel = new Label("Voice Message");
+        durationLabel.setStyle("-fx-text-fill: " + (mine ? "white" : "black") + "; -fx-font-size: 12px;");
+
+        // Waveform representation (simple visual)
+        Label waveformLabel = new Label("♪ ♫ ♪ ♫ ♪");
+        waveformLabel.setStyle("-fx-text-fill: " + (mine ? "#aad4ff" : "#bbbbbb") + "; -fx-font-size: 10px;");
+
+        voiceControls.getChildren().addAll(playButton, durationLabel, waveformLabel);
+
+        // Message bubble styling for voice
+        VBox voiceBubble = new VBox(voiceControls);
+        voiceBubble.setPadding(new Insets(5));
+        voiceBubble.setMaxWidth(250);
+        voiceBubble.setStyle(
+                mine
+                        ? "-fx-background-color: #0084ff; -fx-background-radius: 15 0 15 15;"
+                        : "-fx-background-color: #8e24aa; -fx-background-radius: 0 15 15 15;"
+        );
+
+        // Play button functionality
+        playButton.setOnAction(e -> {
+            if (playButton.getText().equals("▶")) {
+                playButton.setText("⏸");
+                durationLabel.setText("Playing...");
+                VoicePlayback.playAudio(audioData);
+
+                // Simulate playback duration
+//                new Thread(() -> {
+//                    try {
+//                        Thread.sleep(3000); // Simulate 3 seconds of playback
+//                        Platform.runLater(() -> {
+//                            playButton.setText("▶");
+//                            durationLabel.setText("Voice Message");
+//                        });
+//                    } catch (InterruptedException ex) {
+//                        Thread.currentThread().interrupt();
+//                    }
+//                }).start();
+            } else {
+                playButton.setText("▶");
+                durationLabel.setText("Voice Message");
+                // TODO: Stop voice playback
+            }
+        });
+
+        // Timestamp label
+        Label timeLabel = new Label(time.format(DateTimeFormatter.ofPattern("hh:mm a")));
+        timeLabel.setStyle("-fx-text-fill: " + (mine ? "#aad4ff" : "#dddddd") + "; -fx-font-size: 10;");
+
+        // VBox to stack sender (if not mine), bubble, and time
+        VBox messageContent = new VBox(3);
+        messageContent.setAlignment(mine ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+        messageContent.setMaxWidth(Region.USE_PREF_SIZE);
+
+        // Add sender label above bubble for other users
+        if (!mine && sender != null) {
+            Label senderLabel = new Label(sender);
+            senderLabel.setStyle("-fx-text-fill: #666666; -fx-font-size: 12; -fx-font-weight: bold;");
+            messageContent.getChildren().add(senderLabel);
+        }
+
+        messageContent.getChildren().addAll(voiceBubble, timeLabel);
+        HBox.setHgrow(messageContent, Priority.NEVER); // prevent stretching
+
+        // Final add to message container
+        messageContainer.getChildren().add(messageContent);
+        this.messageContainer.getChildren().add(messageContainer);
+    }
+
+
+    //To show image
+    private void addImageBubble(String base64Image, boolean mine, LocalTime time, String sender) {
+        // HBox to align the whole message bubble left/right
+        HBox messageContainer = new HBox();
+        messageContainer.setAlignment(mine ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+        messageContainer.setPadding(new Insets(5, 10, 5, 10));
+
+        // Image view from base64
+        ImageView imageView = getImageViewFromBase64(base64Image);
+        if (imageView == null) {
+            // Fallback to text if image can't be loaded
+            addMessageBubble("Image could not be loaded", mine, time, sender);
+            return;
+        }
+
+        // Set image size constraints
+        imageView.setFitWidth(200);
+        imageView.setFitHeight(150);
+        imageView.setPreserveRatio(true);
+        imageView.setSmooth(true);
+
+        // Message bubble styling for image
+        VBox imageBubble = new VBox(imageView);
+        imageBubble.setPadding(new Insets(5));
+        imageBubble.setMaxWidth(220);
+        imageBubble.setStyle(
+                mine
+                        ? "-fx-background-color: #0084ff; -fx-background-radius: 15 0 15 15;"
+                        : "-fx-background-color: #8e24aa; -fx-background-radius: 0 15 15 15;"
+        );
+
+        // Timestamp label
+        Label timeLabel = new Label(time.format(DateTimeFormatter.ofPattern("hh:mm a")));
+        timeLabel.setStyle("-fx-text-fill: " + (mine ? "#aad4ff" : "#dddddd") + "; -fx-font-size: 10;");
+
+        // VBox to stack sender (if not mine), bubble, and time
+        VBox messageContent = new VBox(3);
+        messageContent.setAlignment(mine ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+        messageContent.setMaxWidth(Region.USE_PREF_SIZE);
+
+        // Add sender label above bubble for other users
+        if (!mine && sender != null) {
+            Label senderLabel = new Label(sender);
+            senderLabel.setStyle("-fx-text-fill: #666666; -fx-font-size: 12; -fx-font-weight: bold;");
+            messageContent.getChildren().add(senderLabel);
+        }
+
+        messageContent.getChildren().addAll(imageBubble, timeLabel);
+        HBox.setHgrow(messageContent, Priority.NEVER); // prevent stretching
+
+        // Final add to message container
+        messageContainer.getChildren().add(messageContent);
+        this.messageContainer.getChildren().add(messageContainer); // <-- your outer VBox holding all messages
+    }
+
+    private void selectImage() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Select Image");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.bmp")
+        );
+
+        Stage stage = (Stage) sendIcon.getScene().getWindow();
+        File file = fileChooser.showOpenDialog(stage);
+
+        if (file != null) {
+            try {
+                byte[] imageBytes = Files.readAllBytes(file.toPath());
+                base64ImageString = Base64.getEncoder().encodeToString(imageBytes);
+                showAlert("Image selected successfully!");
+            } catch (Exception e) {
+                showAlert("Failed to load image: " + e.getMessage());
+            }
+        }
+    }
+
+    private void recordVoice() {
+        if (!VoiceUtil.isRecording()) {
+            VoiceUtil.setRecording(true);
+            VoiceSend.setStyle("-fx-background-color: red;"); // optional: visual feedback
+            VoiceRecorder.captureAudio();
+        } else {
+            VoiceUtil.setRecording(false);
+            VoiceSend.setStyle("-fx-background-color: red;"); // reset
+            VoiceUtil.setRecording(false);  // stop the capture
+            new Thread(() -> {
+                try {
+                    Thread.sleep(500);
+                    voiceData = VoiceRecorder.getAudioByteArray();
+                    VoicePlayback.playAudio(voiceData);// wait for recording to finish
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }).start();
+
+//            System.out.println(voiceData.length);
+
+//            if (audio != null && audio.length > 0) {
+////                sendVoiceMessage(audio);
+//            }
+        }
+    }
+
     public void leaveRoomHandler(ActionEvent event) {
         try {
+            if(currentRoomId==null) {
+                showAlert("You are not in any room.");
+                return;
+            }
+//            System.out.println("running stuck");
+//            stopListenForMessages();
+//            System.out.println("not stuck");
+
             NetworkUtil.getOut().writeObject("LEAVE:");
             NetworkUtil.getOut().flush();
 
             // Clear the message container
-            messageContainer.getChildren().clear();
+//            messageContainer.getChildren().clear();
             // Reset room ID and label
-            String response = (String) NetworkUtil.getIn().readObject();
+//            String response = (String) NetworkUtil.getIn().readObject();
 
-            if (response.equals("LEFT")) {
-                showAlert("You have left the room.");
-                messages = null;
-                roomLabel.setText("JOIN A ROOM");
-                populateMessages();
-            } else {
-                System.out.println("Response: " + response);
-                showAlert("Failed to leave room.");
-                return;
-            }
+//            if (response.equals("LEFT")) {
+//                showAlert("You have left the room.");
+//                messages = null;
+//                roomLabel.setText("JOIN A ROOM");
+//                currentRoomId = null;
+//                leaveRoomBtn.setVisible(false);
+//                joinRoomBtn.setDisable(false);
+//                createRoomBtn.setDisable(false);
+//                populateMessages();
+//            } else {
+//                System.out.println("Response: " + response);
+//                showAlert("Failed to leave room.");
+//                return;
+//            }
 
 
         } catch (Exception e) {

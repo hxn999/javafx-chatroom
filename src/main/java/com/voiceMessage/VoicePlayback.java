@@ -24,17 +24,17 @@ public class VoicePlayback extends VoiceUtil {
                 public void run() {
                     try {
                         int count;
-                        while ((count = ais.read(
-                                buffer, 0, buffer.length)) != -1) {
-                            if (count > 0) {
-                                line.write(buffer, 0, count);
-                            }
+                        byte[] buffer = new byte[1024];
+                        while ((count = ais.read(buffer, 0, buffer.length)) != -1) {
+                            line.write(buffer, 0, count);
                         }
                     } catch (IOException e) {
-                        System.err.println("I/O problems: " + e);
+                        System.err.println("Playback error: " + e);
                     } finally {
                         line.drain();
+                        line.stop();  // ✅ important
                         line.close();
+                        System.out.println("Playback finished");
                     }
                 }
             };

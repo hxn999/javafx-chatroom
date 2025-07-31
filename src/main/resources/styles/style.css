@@ -417,6 +417,89 @@
     -fx-scale-y: 0.95;
     -fx-opacity: 0.7;
 }
+.voice-btn {
+    -fx-cursor: hand;
+    -fx-padding: 6px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.25), 4, 0, 0, 2);
+    -fx-border-color: white;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-background-color: transparent; /* ImageView doesn’t support bg color directly */
+    -fx-opacity: 0.9;
+    -fx-scale-x: 1;
+    -fx-scale-y: 1;
+    -fx-transition: all 0.2s ease-in-out;
+}
+
+.voice-btn:hover {
+    -fx-opacity: 1.0;
+    -fx-scale-x: 1.1;
+    -fx-scale-y: 1.1;
+}
+
+
+.join-btn {
+    -fx-background-color: linear-gradient(to right, #667eea, #764ba2); /* purple-blue gradient */
+    -fx-text-fill: white;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
+    -fx-padding: 8 16;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 4, 0, 0, 2);
+    -fx-cursor: hand;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-transition: all 0.3s ease-in-out;
+}
+
+.join-btn:hover {
+    -fx-background-color: linear-gradient(to right, #5a67d8, #6b46c1);
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+}
+
+.create-btn {
+    -fx-background-color: linear-gradient(to right, #ff512f, #dd2476); /* sunset-orange to pink */
+    -fx-text-fill: white;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
+    -fx-padding: 8 16;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 4, 0, 0, 2);
+    -fx-cursor: hand;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+}
+
+.create-btn:hover {
+    -fx-background-color: linear-gradient(to right, #ff3e1d, #c81e62);
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+}
+.leave-btn {
+    -fx-background-color: linear-gradient(to right, #ff416c, #ff4b2b); /* hot red to coral */
+    -fx-text-fill: white;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
+    -fx-padding: 8 16;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 4, 0, 0, 2);
+    -fx-cursor: hand;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+}
+
+.leave-btn:hover {
+    -fx-background-color: linear-gradient(to right, #e63946, #d62828); /* deeper red hover */
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+}
+
+
+
+
+
 
 .video-border{
     -fx-background-color:#3b4ef7 ;

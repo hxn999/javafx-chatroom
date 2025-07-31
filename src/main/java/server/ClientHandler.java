@@ -1,6 +1,7 @@
 package server;
 
 import model.Message;
+import model.MessageType;
 import model.User;
 import java.io.*;
 import java.net.InetAddress;
@@ -58,7 +59,8 @@ public class ClientHandler extends Thread {
                     else if (command.startsWith("END_CALL:")) {
                         videoCallEnd(command);
                     }
-                } else if (obj instanceof Message msg) {
+                }
+                else if (obj instanceof Message msg) {
                     System.out.println("Received message: " + msg.getContent() + " from room: " + msg.getRoomId());
 //                    ServerMain.roomHistory.computeIfAbsent(msg.getRoomId(), k -> new ArrayList<>()).add(msg);
                     // After receiving a Message `msg` from client
@@ -154,6 +156,10 @@ public class ClientHandler extends Thread {
 //        ServerMain.roomClients.computeIfAbsent(roomId, k -> new ArrayList<>()).add(out);
 
         currentRoom = roomId;
+        // Initialize room clients list if it doesn't exist
+        if (!ServerMain.roomClients.containsKey(roomId)) {
+            ServerMain.roomClients.put(roomId, new ArrayList<>());
+        }
         ServerMain.roomClients.get(roomId).add(out);
         if(!ServerMain.roomUsers.containsKey(roomId)) {
             ServerMain.roomUsers.put(roomId, new ArrayList<>());
@@ -212,11 +218,11 @@ public class ClientHandler extends Thread {
 
 
             // Notify the client that they have joined the room
-            out.writeObject("JOINED:" + roomId);
+            out.writeObject("CREATED:" + roomId);
             out.flush();
 
 
-            System.out.println("Client joined room: " + roomId);
+
 
         } catch (IOException e) {
             try {
@@ -235,6 +241,7 @@ public class ClientHandler extends Thread {
             currentRoom = null;
             try {
                 out.writeObject("LEFT");
+                return;
             } catch (IOException e) {
                 e.printStackTrace();
 
